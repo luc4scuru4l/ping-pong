@@ -46,48 +46,53 @@ class Barra:
         self.corregir_posicion()
         self.dibujar()
 
-    def margen_izq(self):
-        return self.__MARGEN_IZQ
-
-    def pos_actual(self):
-        return self.__pos_actual
-
-    def ancho(self):
-        return self.__ANCHO
-
-    def alto(self):
-        return self.__ALTO
-
 class Pelota:
     __POS_X_INICIAL = 100
     __POS_Y_INICIAL = 100
-    __RADIO = 50
+    __RADIO = 25
+    __DIAMETRO = __RADIO * 2
     __velx = 6
     __vely = -6
 
     def __init__(self, canvas, color):
-        self.__pos_x = self.__POS_X_INICIAL
-        self.__pos_y = self.__POS_Y_INICIAL
+        self.__lado_izq_x = self.__POS_X_INICIAL
+        self.__lado_izq_y = self.__POS_Y_INICIAL
+        self.__lado_der_x = self.__lado_izq_x + self.__DIAMETRO
+        self.__lado_der_y = self.__lado_izq_y + self.__DIAMETRO
         self.canvas = canvas
         self.id = canvas.create_oval(
-            self.__POS_X_INICIAL, 
-            self.__POS_Y_INICIAL, 
-            self.__POS_X_INICIAL + self.__RADIO, 
-            self.__POS_Y_INICIAL + self.__RADIO, 
+            self.__lado_izq_x, 
+            self.__lado_izq_y, 
+            self.__lado_der_x, 
+            self.__lado_der_y, 
             fill=color
             )
     def mover(self):
-        self.__pos_x += self.__velx
-        self.__pos_y += self.__vely
-        self.canvas.coords(self.id, self.__pos_x, self.__pos_y, self.__pos_x + (self.__RADIO * 2), self.__pos_y + (self.__RADIO * 2))
+        self.__lado_izq_x += self.__velx
+        self.__lado_izq_y += self.__vely
+        self.__lado_der_x += self.__velx
+        self.__lado_der_y += self.__vely
+        self.canvas.coords(
+            self.id, 
+            self.__lado_izq_x, 
+            self.__lado_izq_y, 
+            self.__lado_der_x, 
+            self.__lado_der_y
+            )
     def reflejar_x(self, n: int):
-        self.__pos_x += n
         self.__velx *= -1
+        self.__lado_izq_x += n
+        self.__lado_der_x += n
     def reflejar_y(self, n: int):
-        self.__pos_y += n
         self.__vely *= -1
+        self.__lado_izq_y += n
+        self.__lado_der_y += n
     def radio(self):
         return self.__RADIO
+    def diametro(self):
+        return self.__DIAMETRO
+    def lado_der_x(self):
+        return self.__lado_der_x
 
 class App:
 
@@ -107,20 +112,12 @@ class App:
         self.root.bind("<KeyPress-Up>", self.barra.mover)
         self.root.mainloop()
                     
-
-
     def configurar_escena(self):
         self.escena = tkinter.Canvas(self.root, width=750, height=500, bg="black")
         self.escena.pack()
-    
-    def rebote_en_x(self):
-        pass
-
-    def rebote_en_y(self):
-        pass
 
     def choca_con_pared(self):
-        return self.pelota.pos_x + self.pelota.radio >= self.__ANCHO_VENTANA
+        return self.pelota.lado_der_x() > self.__ANCHO_VENTANA
     
 if __name__ == "__main__":
     app = App()
