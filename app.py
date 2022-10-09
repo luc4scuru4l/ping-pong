@@ -65,12 +65,12 @@ class Barra(Figura):
         self.dibujar()
 
 class Pelota(Figura):
-    __POS_X_INICIAL = 300
-    __POS_Y_INICIAL = 300
+    __POS_X_INICIAL = 100
+    __POS_Y_INICIAL = 100
     __RADIO = 25
     __DIAMETRO = __RADIO * 2
-    __velx = -6
-    __vely = 6
+    __velx = 6
+    __vely = -6
 
     def __init__(self, canvas, color):
         self.__lado_izq_x = self.__POS_X_INICIAL
