@@ -44,7 +44,7 @@ class Barra(Figura):
             *self.get_posicion(), 
             fill=color
             )
-        self.dibujar()
+        #self.dibujar()
 
     def corregir_posicion(self, y):
         return max(0, min(self.__MAX_POS, y))
@@ -65,12 +65,12 @@ class Barra(Figura):
         self.dibujar()
 
 class Pelota(Figura):
-    __POS_X_INICIAL = 100
-    __POS_Y_INICIAL = 100
+    __POS_X_INICIAL = 300
+    __POS_Y_INICIAL = 300
     __RADIO = 25
     __DIAMETRO = __RADIO * 2
-    __velx = 6
-    __vely = -6
+    __velx = -6
+    __vely = 6
 
     def __init__(self, canvas, color):
         self.__lado_izq_x = self.__POS_X_INICIAL
@@ -88,14 +88,14 @@ class Pelota(Figura):
             *self.get_posicion(), 
             fill=color
             )
-        self.dibujar()
+        #self.dibujar()
+        #self.mover()
     def mover(self):
         #print(self.get_posicion())
-        self.rebota_en_y()
-        self.rebota_en_x()
+        self.rebota()
         self.actual = self.get_posicion()
-        self.x = self.actual[0] + self.__velx
-        self.y = self.actual[1] + self.__vely
+        self.x = self.actual[0] + self.velocidad()["x"]
+        self.y = self.actual[1] + self.velocidad()["y"]
         self.set_posicion(
             self.x,
             self.y,
@@ -103,11 +103,17 @@ class Pelota(Figura):
             self.y + self.__DIAMETRO
         )
         self.dibujar()
-        self.canvas.after(10, self.mover)
+        #self.canvas.after(10, self.mover)
     def reflejar_x(self, n: int):
         self.__velx *= -1
-        self.__lado_izq_x += n
-        self.__lado_der_x += n
+        self.actual = self.get_posicion()
+        self.x = self.actual[0] + n
+        self.set_posicion(
+            self.x,
+            self.actual[1],
+            self.x + self.__DIAMETRO,
+            self.actual[3]
+        )
     def reflejar_y(self, n: int):
         self.__vely *= -1
         self.actual = self.get_posicion()
@@ -116,31 +122,36 @@ class Pelota(Figura):
             self.actual[0],
             self.actual[1] + n,
             self.actual[2],
-            self.y + self.diametro()
+            self.y + self.__DIAMETRO
         )
-    def radio(self):
-        return self.__RADIO
+    def velocidad(self):
+        return {
+            "x": self.__velx, 
+            "y": self.__vely
+            }
     def choca_con_pared(self):
         return self.get_posicion()[2] > self.canvas.winfo_width()
     def choca_con_techo(self):
         return self.get_posicion()[1] < 0
     def choca_con_piso(self):
         return self.get_posicion()[3] > self.canvas.winfo_height()
+    def rebota(self):
+        self.rebota_en_y()
+        self.rebota_en_x()
     def rebota_en_y(self):
         if self.choca_con_techo():
-            print("CHOCÓ CON TECHO")
+            #print("CHOCÓ CON TECHO")
             self.reflejar_y(-self.get_posicion()[1])
         if self.choca_con_piso():
-            print("CHOCÓ CON PISO")
+            #print("CHOCÓ CON PISO")
             self.reflejar_y(self.canvas.winfo_height() - self.get_posicion()[3])
     def rebota_en_x(self):
         if self.choca_con_pared():
-            print("CHOCÓ CON PARED")
-            self.reflejar_x(self.canvas.winfo_width() - self.__lado_der_x)
-    def diametro(self):
-        return self.__DIAMETRO
-    def lado_der_x(self):
-        return self.__lado_der_x
+            #print("CHOCÓ CON PARED")
+            self.reflejar_x(self.canvas.winfo_width() - self.get_posicion()[2])
+        """if self.choca_con_barra(x1, y1, x2, y2):
+            print("CHOCÓ CON BARRA")
+            self.reflejar_x(-self.get_posicion()[0])"""
 
 class App:
 
@@ -154,15 +165,24 @@ class App:
         self.escena.update()
         self.barra = Barra(self.escena, "#33FF00")
         self.pelota = Pelota(self.escena, "#33FF00")
-        self.pelota.mover()
         self.root.bind("<KeyPress-Down>", self.barra.mover)
         self.root.bind("<KeyPress-Up>", self.barra.mover)
+        self.iniciar()
         self.root.mainloop()
                     
     def configurar_escena(self):
         self.escena = tkinter.Canvas(self.root, width=750, height=500, bg="black")
         self.escena.pack()
+    def pelota_choca_con_barra(self, pelota, barra):
+        if (barra[1] < pelota[1] and barra[3] > pelota[1]) or (barra[1] < pelota[3] and barra[3] > pelota[3]):
+            if 0 < barra[2] - pelota[0] < 12.5:
+                print("HOLA")
+                self.pelota.reflejar_x(barra[2] - pelota[0])
 
-    
+    def iniciar(self):
+        self.pelota.mover()
+        self.pelota_choca_con_barra(self.pelota.get_posicion(), self.barra.get_posicion())
+        self.escena.after(50, self.iniciar)
+
 if __name__ == "__main__":
     app = App()
