@@ -1,5 +1,63 @@
 import tkinter
 
+class Barra:
+    __MARGEN_IZQ = 10
+    __ANCHO = 30
+    __ALTO = 100
+    __VEL_BARRA = 10
+    __pos_actual = 0
+    
+    def __init__(self, canvas, alto_ventana, color):
+        self.__MAX_POS = alto_ventana - self.__ALTO
+        self.canvas = canvas
+        self.__pos_actual = (alto_ventana - self.__ALTO) * 0.5
+        print(self.__pos_actual)
+        self.id = canvas.create_rectangle(
+            self.__MARGEN_IZQ, 
+            self.__pos_actual, 
+            self.__MARGEN_IZQ + self.__ANCHO, 
+            self.__ALTO, 
+            fill=color
+            )
+    def subir_barra(self):
+        self.__pos_actual -= self.__VEL_BARRA
+
+    def baja_barra(self):
+        self.__pos_actual += self.__VEL_BARRA
+
+    def corregir_posicion(self):
+        self.__pos_actual = max(0, min(self.__MAX_POS, self.__pos_actual))
+    
+    def dibujar(self):
+        self.canvas.coords(
+            self.id, 
+            self.__MARGEN_IZQ, 
+            self.__pos_actual, 
+            self.__MARGEN_IZQ + self.__ANCHO, 
+            self.__pos_actual + self.__ALTO
+            )
+        self.canvas.update()
+
+    def mover(self, event):
+        if event.keysym == "Up":
+            self.subir_barra()
+        else:
+            self.baja_barra()
+        self.corregir_posicion()
+        self.dibujar()
+
+    def margen_izq(self):
+        return self.__MARGEN_IZQ
+
+    def pos_actual(self):
+        return self.__pos_actual
+
+    def ancho(self):
+        return self.__ANCHO
+
+    def alto(self):
+        return self.__ALTO
+
 class Pelota:
     __POS_X_INICIAL = 100
     __POS_Y_INICIAL = 100
@@ -28,16 +86,10 @@ class Pelota:
     def reflejar_y(self, n: int):
         self.__pos_y += n
         self.__vely *= -1
-
-
-
-
+    def radio(self):
+        return self.__RADIO
 
 class App:
-    #VARIABLES Y CONSTANTES ASOCIADAS A LA BARRA
-    __VEL_BARRA = 10
-    __POS_BARRA_X = 10
-    __pos_barra = 0
 
     def __init__(self):    
         self.root = tkinter.Tk()
@@ -48,29 +100,27 @@ class App:
         self.__ALTO_VENTANA = self.root.winfo_height()
         self.root.resizable(0, 0)
         self.configurar_escena()
-        self.crear_barra()
+        self.barra = Barra(self.escena, self.__ALTO_VENTANA, "#33FF00")
+        self.barra.dibujar()
         self.pelota = Pelota(self.escena, "white")
-        self.root.bind("<KeyPress-Down>", self.mover_barra)
-        self.root.bind("<KeyPress-Up>", self.mover_barra)
+        self.root.bind("<KeyPress-Down>", self.barra.mover)
+        self.root.bind("<KeyPress-Up>", self.barra.mover)
         self.root.mainloop()
-        
+                    
 
 
     def configurar_escena(self):
         self.escena = tkinter.Canvas(self.root, width=750, height=500, bg="black")
         self.escena.pack()
     
-    def crear_barra(self):
-        self.barra = self.escena.create_rectangle(self.__POS_BARRA_X, 0, 40, 100, fill="#33FF00")
-
-    def mover_barra(self, event):
-        self.__pos_barra += self.__VEL_BARRA if event.keysym == "Down" else -self.__VEL_BARRA
-        self.__pos_barra = max(0, min(self.__ALTO_VENTANA - 100, self.__pos_barra))
-        self.escena.coords(self.barra, self.__POS_BARRA_X, self.__pos_barra, 40, self.__pos_barra + 100)
-        self.escena.update()
-    
     def rebote_en_x(self):
         pass
+
+    def rebote_en_y(self):
+        pass
+
+    def choca_con_pared(self):
+        return self.pelota.pos_x + self.pelota.radio >= self.__ANCHO_VENTANA
     
 if __name__ == "__main__":
     app = App()
