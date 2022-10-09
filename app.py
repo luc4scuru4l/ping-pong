@@ -1,49 +1,66 @@
 import tkinter
 
-class Barra:
-    __MARGEN_IZQ = 10
-    __ANCHO = 30
-    __ALTO = 100
-    __VEL_BARRA = 10
-    __pos_actual = 0
-    
-    def __init__(self, canvas, alto_ventana, color):
-        self.__MAX_POS = alto_ventana - self.__ALTO
+class Figura:
+    def __init__(self, canvas, x1, y1, x2, y2):
+        self.set_posicion(x1, y1, x2, y2)
         self.canvas = canvas
-        self.__pos_actual = (alto_ventana - self.__ALTO) * 0.5
-        print(self.__pos_actual)
-        self.id = canvas.create_rectangle(
-            self.__MARGEN_IZQ, 
-            self.__pos_actual, 
-            self.__MARGEN_IZQ + self.__ANCHO, 
-            self.__ALTO, 
-            fill=color
-            )
-    def subir_barra(self):
-        self.__pos_actual -= self.__VEL_BARRA
-
-    def baja_barra(self):
-        self.__pos_actual += self.__VEL_BARRA
-
-    def corregir_posicion(self):
-        self.__pos_actual = max(0, min(self.__MAX_POS, self.__pos_actual))
-    
+    def set_posicion(self, x1, y1, x2, y2):
+        (self.__lado_izq_x, 
+        self.__lado_izq_y, 
+        self.__lado_der_x, 
+        self.__lado_der_y
+        ) = (x1, y1, x2, y2)
+    def get_posicion(self):
+        return (self.__lado_izq_x, 
+                self.__lado_izq_y, 
+                self.__lado_der_x, 
+                self.__lado_der_y)
     def dibujar(self):
         self.canvas.coords(
             self.id, 
-            self.__MARGEN_IZQ, 
-            self.__pos_actual, 
-            self.__MARGEN_IZQ + self.__ANCHO, 
-            self.__pos_actual + self.__ALTO
+            *self.get_posicion()
             )
         self.canvas.update()
+class Barra(Figura):
+    __LADO_IZQ_X = 10
+    __ANCHO = 30
+    __ALTO = 100
+    __VEL_BARRA = 10
+    
+    def __init__(self, canvas, color):
+        self.__MAX_POS = canvas.winfo_height() - self.__ALTO
+        self.__lado_izq_y = self.__MAX_POS * 0.5
+        self.__lado_der_x = self.__LADO_IZQ_X + self.__ANCHO
+        self.__lado_der_y = self.__lado_izq_y + self.__ALTO
+        Figura.__init__(
+            self,
+            canvas, 
+            self.__LADO_IZQ_X, 
+            self.__lado_izq_y, 
+            self.__lado_der_x, 
+            self.__lado_der_y,
+            )
+        self.id = self.canvas.create_rectangle(
+            *self.get_posicion(), 
+            fill=color
+            )
 
+    def corregir_posicion(self, y):
+        return max(0, min(self.__MAX_POS, y))
+    
     def mover(self, event):
         if event.keysym == "Up":
-            self.subir_barra()
+            self.operacion = lambda x, y: x - y
         else:
-            self.baja_barra()
-        self.corregir_posicion()
+            self.operacion = lambda x, y: x + y
+        self.actual = self.get_posicion()
+        self.y = self.corregir_posicion(self.operacion(self.actual[1], self.__VEL_BARRA))
+        self.set_posicion(
+            self.actual[0],
+            self.y,
+            self.actual[2],
+            self.y + self.__ALTO
+        )
         self.dibujar()
 
 class Pelota:
@@ -60,6 +77,7 @@ class Pelota:
         self.__lado_der_x = self.__lado_izq_x + self.__DIAMETRO
         self.__lado_der_y = self.__lado_izq_y + self.__DIAMETRO
         self.canvas = canvas
+        #print(self.canvas.winfo_width())
         self.id = canvas.create_oval(
             self.__lado_izq_x, 
             self.__lado_izq_y, 
@@ -72,6 +90,7 @@ class Pelota:
         self.__lado_izq_y += self.__vely
         self.__lado_der_x += self.__velx
         self.__lado_der_y += self.__vely
+        self.rebote()
         self.canvas.coords(
             self.id, 
             self.__lado_izq_x, 
@@ -79,6 +98,7 @@ class Pelota:
             self.__lado_der_x, 
             self.__lado_der_y
             )
+        self.canvas.after(10, self.mover)
     def reflejar_x(self, n: int):
         self.__velx *= -1
         self.__lado_izq_x += n
@@ -89,6 +109,11 @@ class Pelota:
         self.__lado_der_y += n
     def radio(self):
         return self.__RADIO
+    def choca_con_pared(self):
+        return self.__lado_der_x > self.canvas.winfo_width()
+    def rebote(self):
+        if self.choca_con_pared():
+            self.reflejar_x(self.canvas.winfo_width() - self.__lado_der_x)
     def diametro(self):
         return self.__DIAMETRO
     def lado_der_x(self):
@@ -101,13 +126,13 @@ class App:
         self.root.title("Ping Pong")
         self.root.geometry("750x500")
         self.root.update()
-        self.__ANCHO_VENTANA = self.root.winfo_width()
-        self.__ALTO_VENTANA = self.root.winfo_height()
         self.root.resizable(0, 0)
         self.configurar_escena()
-        self.barra = Barra(self.escena, self.__ALTO_VENTANA, "#33FF00")
+        self.escena.update()
+        self.barra = Barra(self.escena, "#33FF00")
         self.barra.dibujar()
         self.pelota = Pelota(self.escena, "white")
+        self.pelota.mover()
         self.root.bind("<KeyPress-Down>", self.barra.mover)
         self.root.bind("<KeyPress-Up>", self.barra.mover)
         self.root.mainloop()
@@ -116,8 +141,6 @@ class App:
         self.escena = tkinter.Canvas(self.root, width=750, height=500, bg="black")
         self.escena.pack()
 
-    def choca_con_pared(self):
-        return self.pelota.lado_der_x() > self.__ANCHO_VENTANA
     
 if __name__ == "__main__":
     app = App()
