@@ -63,7 +63,6 @@ class Barra(Figura):
             self.y + self.__ALTO
         )
         self.dibujar()
-
 class Pelota(Figura):
     __POS_X_INICIAL = 100
     __POS_Y_INICIAL = 100
@@ -88,8 +87,6 @@ class Pelota(Figura):
             *self.get_posicion(), 
             fill=color
             )
-        #self.dibujar()
-        #self.mover()
     def mover(self):
         #print(self.get_posicion())
         self.rebota()
@@ -149,13 +146,21 @@ class Pelota(Figura):
         if self.choca_con_pared():
             #print("CHOCÓ CON PARED")
             self.reflejar_x(self.canvas.winfo_width() - self.get_posicion()[2])
-        """if self.choca_con_barra(x1, y1, x2, y2):
-            print("CHOCÓ CON BARRA")
-            self.reflejar_x(-self.get_posicion()[0])"""
+class Puntaje:
+    def __init__(self, ventana, color):
+        self.puntos = tkinter.StringVar()
+        self.puntos.set("0")
+        self.label = tkinter.Label(ventana, fg=color, bg="black", font=("Retro Computer", 20), width=2, height=1)
+        self.label.config(textvariable=self.puntos)
+        ancho_ventana = ventana.winfo_width()
+        self.label.place(x=ancho_ventana-60, y=10)
+    def sumar_punto(self):
+        self.puntos.set(str(int(self.puntos.get()) + 1))
 
 class App:
 
-    def __init__(self):    
+    def __init__(self):
+        self.id = None
         self.root = tkinter.Tk()
         self.root.title("Ping Pong")
         self.root.geometry("750x500")
@@ -173,16 +178,28 @@ class App:
     def configurar_escena(self):
         self.escena = tkinter.Canvas(self.root, width=750, height=500, bg="black")
         self.escena.pack()
-    def pelota_choca_con_barra(self, pelota, barra):
-        if (barra[1] < pelota[1] and barra[3] > pelota[1]) or (barra[1] < pelota[3] and barra[3] > pelota[3]):
-            if 0 < barra[2] - pelota[0] < 12.5:
-                print("HOLA")
-                self.pelota.reflejar_x(barra[2] - pelota[0])
+        self.puntaje = Puntaje(self.root, "#33FF00")
+    def pelota_choca_con_barra(self):
+        pelota, barra = self.pelota.get_posicion(), self.barra.get_posicion()
+        return all(
+            ((barra[1] < pelota[1] and barra[3] > pelota[1]) or (barra[1] < pelota[3] and barra[3] > pelota[3]),
+            0 < barra[2] - pelota[0] <= abs(self.pelota.velocidad()["x"]))
+        )
+    
+    def fuera_de_escena(self):
+        return (self.pelota.get_posicion()[0] < self.barra.get_posicion()[2]) and not self.pelota_choca_con_barra()
 
-    def iniciar(self):
+    def juego(self):
         self.pelota.mover()
-        self.pelota_choca_con_barra(self.pelota.get_posicion(), self.barra.get_posicion())
-        self.escena.after(50, self.iniciar)
-
+        if self.pelota_choca_con_barra():
+            self.puntaje.sumar_punto()
+            self.pelota.reflejar_x(self.barra.get_posicion()[2] - self.pelota.get_posicion()[0])
+        self.id = self.escena.after(10, self.juego)
+        if self.fuera_de_escena():
+            self.perdiste()
+    def iniciar(self):
+        self.juego()
+    def perdiste(self):
+        self.escena.after_cancel(self.id)
 if __name__ == "__main__":
     app = App()
